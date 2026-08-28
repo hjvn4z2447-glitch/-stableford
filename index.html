@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Stableford 4Ball</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f6f3;color:#18221b;font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#075d32;color:#fff;padding:20px 16px 16px}h1{margin:0;font-size:25px}.sub{opacity:.8;margin-top:3px}
+.wrap{max-width:720px;margin:auto;padding:10px}.card{background:#fff;border-radius:17px;padding:14px;margin-bottom:11px;box-shadow:0 2px 9px #0001}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.field label{display:block;font-size:12px;font-weight:800;color:#68746c;margin-bottom:4px}.field input,.field select{width:100%;padding:11px;border:1px solid #cdd8d0;border-radius:10px;background:#fff;font:inherit}
+button{border:0;border-radius:11px;padding:11px 14px;font:inherit;font-weight:800}.green{background:#075d32;color:#fff}.grey{background:#e8eee9}.danger{background:#fee}.title{font-size:19px;font-weight:900;margin-bottom:10px}
+.players{display:grid;gap:8px}.player{display:grid;grid-template-columns:1fr 80px 42px;gap:7px}.player input{width:100%;padding:10px;border:1px solid #ccd7ce;border-radius:9px;font:inherit}
+.setupBtn{width:100%;margin-top:9px}.setupSummary{background:#edf6f0;border-radius:12px;padding:10px;margin-top:10px;font-size:14px}
+.holeNav{display:flex;justify-content:space-between;align-items:center;background:#edf6f0;border-radius:14px;padding:9px;margin-bottom:9px}.holeTitle{text-align:center;font-size:24px;font-weight:900}.holeInfo{text-align:center;font-size:12px;color:#68746c}
+.playerScore{display:grid;grid-template-columns:1fr 78px 62px;align-items:center;gap:8px;border:1px solid #dce5df;border-radius:13px;padding:9px;margin-bottom:8px}.playerScore .muted{display:block;font-size:12px;color:#68746c}.scoreInput{width:78px!important;height:52px!important;padding:0!important;text-align:center;font-size:24px!important;font-weight:900;border:2px solid #075d32!important;border-radius:10px}.points{font-size:21px;font-weight:900;text-align:center;color:#075d32}.points small{display:block;font-size:9px;color:#68746c}
+.navrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.holes{display:flex;gap:5px;overflow:auto;padding-top:9px}.holes button{min-width:35px;padding:8px 0}.holes .sel{background:#075d32;color:#fff}.holes .done{box-shadow:inset 0 -3px #70ad87}
+.leadrow{display:grid;grid-template-columns:30px 1fr 70px;gap:5px;align-items:center;background:#edf6f0;border-radius:11px;padding:9px;margin-bottom:6px}.big{font-size:22px;font-weight:900;color:#075d32}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;z-index:5}.modal.show{display:flex}.sheet{background:#fff;width:100%;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:16px}.tee{display:grid;grid-template-columns:1fr 80px 80px 50px;gap:6px;align-items:center;margin-bottom:6px}.tee input{width:100%;padding:9px;border:1px solid #ccd7ce;border-radius:8px}.holesEdit{display:grid;grid-template-columns:45px 1fr 1fr 1fr;gap:5px}.holesEdit input{width:100%;padding:8px;border:1px solid #ccd7ce;border-radius:7px}.muted{color:#68746c}
+@media(max-width:430px){.row{grid-template-columns:1fr 1fr}.tee{grid-template-columns:1fr 60px 60px 42px}.holesEdit{font-size:13px}}
+.results{display:grid;gap:7px}.result{background:#edf6f0;border:1px solid #d3e0d6;border-radius:11px;padding:11px;text-align:left;width:100%}.result b{display:block}.result small{color:#68746c}.loading{padding:9px;color:#68746c}
+</style></head><body>
+<header><h1>⛳ Stableford 4Ball</h1><div class="sub" id="courseHead">Set up your course</div></header>
+<div class="wrap">
+<div class="card"><div class="title">Golfers</div><div id="players" class="players"></div><button class="green" id="add">+ Add golfer</button></div>
+<div class="card"><div class="title">Course</div>
+<div class="field"><label>Search golf course</label><input id="courseSearch" placeholder="e.g. Farnham Golf Club" autocomplete="off"></div>
+<button class="green setupBtn" id="searchCourse">🔎 Search courses</button><div style="margin-top:9px"><label class="muted" style="font-size:12px;font-weight:800">Quick verified course</label><select id="verifiedCourse" style="width:100%;padding:11px;border:1px solid #cdd8d0;border-radius:10px;margin-top:4px"><option value="hurtmore">Hurtmore Golf Club</option></select></div>
+<div id="teeQuick" style="margin-top:8px"></div>
+<div id="courseResults" style="margin-top:9px"></div>
+<div id="summary" class="setupSummary">No course selected</div>
+<button class="grey setupBtn" id="setup">⚙️ Manual course setup</button></div>
+<div class="card"><div class="title">Scorecard</div><div id="score"></div></div>
+<div class="card"><div class="title">Live leaderboard</div><div id="leader"></div></div>
+<div class="card"><button class="green" id="save">Save round</button><button class="grey" id="new">New round</button><div id="saved" style="margin-top:10px"></div></div>
+</div>
+<div class="modal" id="modal"><div class="sheet">
+<div style="display:flex;justify-content:space-between;align-items:center"><div class="title">Course setup</div><button class="grey" id="close">Close</button></div>
+<div class="row">
+<div class="field"><label>Course name</label><input id="cname" placeholder="e.g. Rowledge Golf Club"></div>
+<div class="field"><label>Course par</label><input id="cpar" type="number" value="72"></div>
+</div>
+<div class="row" style="margin-top:8px">
+<div class="field"><label>Course rating (optional)</label><input id="crating" type="number" step="0.1" placeholder="72.0"></div>
+<div class="field"><label>Slope rating (optional)</label><input id="slope" type="number" value="113"></div>
+</div>
+<div class="field" style="margin-top:8px"><label>Playing allowance</label><select id="allow"><option value="1">100% — Individual Stroke Play / Stableford</option><option value=".95">95%</option><option value=".9">90%</option><option value=".85">85%</option></select></div>
+<div class="title" style="margin-top:16px">Tees</div>
+<div id="tees"></div><button class="grey" id="addTee">+ Add tee</button>
+<div class="title" style="margin-top:16px">Hole details</div>
+<div class="muted" style="font-size:12px;margin-bottom:6px">Enter Par, Stroke Index and optional yards for each hole.</div>
+<div class="holesEdit" id="holeEdit"></div>
+<button class="green setupBtn" id="apply">Save course setup</button>
+</div></div>
+<script>
+(()=>{const $=id=>document.getElementById(id);
+let gs=[{name:"Player 1",hcp:18,s:Array(18).fill("")}],currentHole=0;
+let course={
+name:"Hurtmore Golf Club",par:70,rating:"65.8",slope:112,allow:1,
+tees:[
+{name:"Yellow",yards:"5215",rating:"65.8",slope:112},
+{name:"White",yards:"5495",rating:"66.7",slope:119},
+{name:"Red",yards:"4847",rating:"68.8",slope:122}
+],
+tee:"Yellow",
+holes:[
+[4,11,321],[3,7,175],[4,1,436],[4,15,228],[3,9,116],[4,3,346],[4,17,264],[4,13,252],[4,5,347],
+[4,10,318],[4,14,257],[4,4,359],[4,16,303],[4,12,294],[5,2,511],[3,8,125],[4,18,238],[4,6,325]
+]};
+function strokes(hcp,si){hcp=Math.max(0,Math.round(+hcp||0));return Math.floor(hcp/18)+(si<=hcp%18?1:0)}
+function points(par,score,hcp,si){let d=(+score-strokes(hcp,si))-par;return d<=-3?5:d==-2?4:d==-1?3:d==0?2:d==1?1:0}
+function total(g){let p=0,n=0;g.s.forEach((v,i)=>{if(+v){p+=points(course.holes[i][0],v,g.hcp,course.holes[i][1]);n++}});return[p,n]}
+function renderPlayers(){$("players").innerHTML=gs.map((g,i)=>`<div class="player"><input value="${g.name}" data-n="${i}"><input type="number" value="${g.hcp}" data-h="${i}"><button class="grey" data-r="${i}">×</button></div>`).join("");
+document.querySelectorAll("[data-n]").forEach(x=>x.oninput=()=>{gs[x.dataset.n].name=x.value;renderScore()});document.querySelectorAll("[data-h]").forEach(x=>x.oninput=()=>{gs[x.dataset.h].hcp=x.value;renderScore()});document.querySelectorAll("[data-r]").forEach(x=>x.onclick=()=>{if(gs.length>1){gs.splice(+x.dataset.r,1);renderAll()}})}
+function renderScore(){let h=course.holes[currentHole];let cards=gs.map((g,j)=>{let v=g.s[currentHole]||"",p=v?points(h[0],v,g.hcp,h[1]):"";return `<div class="playerScore"><div><b>${g.name}</b><span class="muted">Hcp ${g.hcp} · ${strokes(g.hcp,h[1])} shot${strokes(g.hcp,h[1])==1?"":"s"}</span></div><input class="scoreInput" type="number" min="1" max="15" inputmode="numeric" value="${v}" placeholder="-" data-s="${j}-${currentHole}"><div class="points">${p||"—"}<small>POINTS</small></div></div>`}).join("");
+$("score").innerHTML=`<div class="holeNav"><button class="grey" id="prev">←</button><div><div class="holeTitle">HOLE ${currentHole+1}</div><div class="holeInfo">Par ${h[0]} · SI ${h[1]}${h[2]?` · ${h[2]} yd`:""}</div></div><button class="grey" id="next">→</button></div>${cards}<div class="navrow"><button class="grey" id="back">${currentHole?"← Previous":"Scorecard"}</button><button class="green" id="forward">${currentHole<17?"Next hole →":"Finish round"}</button></div><div class="holes">${course.holes.map((x,i)=>`<button class="${i===currentHole?"sel ":""}${gs.some(g=>g.s[i])?"done":""}" data-hole="${i}">${i+1}</button>`).join("")}</div>`;
+document.querySelectorAll("[data-s]").forEach(x=>x.oninput=()=>{let [j,i]=x.dataset.s.split("-");gs[j].s[i]=x.value;update()});
+$("prev").onclick=()=>{currentHole=Math.max(0,currentHole-1);renderScore()};$("next").onclick=()=>{currentHole=Math.min(17,currentHole+1);renderScore()};
+$("back").onclick=()=>{if(currentHole){currentHole--;renderScore()}};$("forward").onclick=()=>{if(currentHole<17){currentHole++;renderScore()}else{currentHole=0;update();window.scrollTo({top:0,behavior:"smooth"})}};
+document.querySelectorAll("[data-hole]").forEach(x=>x.onclick=()=>{currentHole=+x.dataset.hole;renderScore()})}
+function update(){renderScore();let a=gs.map((g,i)=>{let t=total(g);return{i,name:g.name,p:t[0],n:t[1]}}).sort((a,b)=>b.p-a.p);$("leader").innerHTML=a.map((x,i)=>`<div class="leadrow"><b>${i+1}</b><b>${x.name}<br><span class="muted">${x.n}/18 holes</span></b><span class="big">${x.p}</span></div>`).join("")}
+
+async function searchCourses(){
+ const q=$("courseSearch").value.trim(); if(!q)return;
+ $("courseResults").innerHTML='<div class="loading">Searching courses…</div>';
+ try{
+  const r=await fetch("https://api.opengolfapi.org/v1/courses/search?q="+encodeURIComponent(q)+"&limit=10");
+  if(!r.ok) throw new Error("Search failed");
+  const data=await r.json();
+  const list=data.courses||data.results||data.data||[];
+  if(!list.length){$("courseResults").innerHTML='<div class="loading">No courses found. Try the full course name.</div>';return}
+  $("courseResults").innerHTML='<div class="results">'+list.map((c,i)=>`<button class="result" data-course="${i}"><b>${c.name||c.course_name||"Course"}</b><small>${[c.city,c.state,c.country].filter(Boolean).join(", ")||c.address||""}</small></button>`).join("")+'</div>';
+  window.courseSearchResults=list;
+  document.querySelectorAll("[data-course]").forEach(b=>b.onclick=()=>loadCourse(window.courseSearchResults[+b.dataset.course]));
+ }catch(e){$("courseResults").innerHTML='<div class="loading">Course search could not connect. Check your internet connection and try again.</div>'}
+}
+async function loadCourse(c){
+ const id=c.id||c.course_id||c.external_id; if(!id)return;
+ $("courseResults").innerHTML='<div class="loading">Loading full scorecard…</div>';
+ try{
+  const base="https://api.opengolfapi.org/v1/courses/"+encodeURIComponent(id);
+  const [courseResp,holesResp,teesResp]=await Promise.all([
+    fetch(base), fetch(base+"/holes"), fetch(base+"/tees")
+  ]);
+  if(!courseResp.ok && !holesResp.ok)throw new Error("Load failed");
+  const d=courseResp.ok?await courseResp.json():{};
+  const hd=holesResp.ok?await holesResp.json():{};
+  const td=teesResp.ok?await teesResp.json():{};
+  const x=d.course||d.data||d;
+  const rawH=hd.holes||hd.data||hd.scorecard||hd;
+  const norm=Array.isArray(rawH)?rawH:(rawH.holes||[]);
+  if(norm.length>=18){
+    course.name=x.name||c.name||"Course"; course.par=+(x.par||norm.reduce((a,h)=>a+(+(h.par||4)),0));
+    course.rating=x.rating||x.course_rating||""; course.slope=x.slope||x.slope_rating||113;
+    course.holes=norm.slice(0,18).map((h,i)=>[+(h.par||4),+(h.stroke_index||h.handicap||h.index||i+1),h.yards||h.yardage||""]);
+    const tees=td.tees||td.data||x.tees||d.tees||[];
+    if(Array.isArray(tees)&&tees.length)course.tees=tees.map(t=>({name:t.name||t.tee_name||"Tee",yards:t.yards||t.total_yards||""}));
+    currentHole=0; $("courseResults").innerHTML='<div class="setupSummary"><b>Course loaded ✓</b></div>'; renderAll();
+  }else throw new Error("No scorecard");
+ }catch(e){$("courseResults").innerHTML='<div class="loading">Course found, but its 18-hole scorecard was not available. You can use manual setup.</div>'}
+}
+function setVerifiedTee(name){
+ const data={
+ Yellow:{yards:"5215",rating:"65.8",slope:112,holes:[[4,11,321],[3,7,175],[4,1,436],[4,15,228],[3,9,116],[4,3,346],[4,17,264],[4,13,252],[4,5,347],[4,10,318],[4,14,257],[4,4,359],[4,16,303],[4,12,294],[5,2,511],[3,8,125],[4,18,238],[4,6,325]]},
+ White:{yards:"5495",rating:"66.7",slope:119,holes:[[4,12,336],[3,8,184],[4,2,442],[4,18,232],[3,6,131],[4,4,350],[4,16,270],[4,14,283],[4,10,389],[4,11,333],[4,15,271],[4,1,373],[4,13,312],[4,3,321],[5,5,530],[3,7,153],[4,17,238],[4,9,347]]},
+ Red:{yards:"4847",rating:"68.8",slope:122,holes:[[4,12,312],[3,8,168],[5,2,388],[4,18,218],[3,6,101],[4,4,289],[4,16,259],[4,14,234],[4,10,343],[4,11,281],[4,15,248],[5,1,345],[4,13,274],[4,3,257],[5,5,491],[3,7,103],[4,17,224],[4,9,312]]}
+ };
+ const d=data[name]; if(!d)return; course.name="Hurtmore Golf Club";course.tee=name;course.par=d.holes.reduce((a,x)=>a+x[0],0);course.rating=d.rating;course.slope=d.slope;course.holes=d.holes;currentHole=0;renderAll();renderQuickTees();
+}
+function renderQuickTees(){
+ $("teeQuick").innerHTML='<div style="display:flex;gap:7px">'+["Yellow","White","Red"].map(t=>`<button class="${course.tee===t?"green":"grey"}" data-qtee="${t}">${t}</button>`).join("")+'</div>';
+ document.querySelectorAll("[data-qtee]").forEach(b=>b.onclick=()=>setVerifiedTee(b.dataset.qtee));
+}
+function renderAll(){renderPlayers();update();$("courseHead").textContent=course.name?(course.name+" · Par "+course.par):"Set up your course";$("summary").innerHTML=course.name?`<b>${course.name}</b><br>${course.tees.map(t=>t.name).join(" / ")} tees · Par ${course.par}${course.rating?` · Rating ${course.rating}`:""}${course.slope?` · Slope ${course.slope}`:""}`:"No course selected"}
+$("add").onclick=()=>{if(gs.length<4){gs.push({name:"Player "+(gs.length+1),hcp:18,s:Array(18).fill("")});renderAll()}};
+$("new").onclick=()=>{if(confirm("Start a new round?")){gs=[{name:"Player 1",hcp:18,s:Array(18).fill("")}];currentHole=0;renderAll()}};
+$("save").onclick=()=>{let h=JSON.parse(localStorage.getItem("sfh")||"[]");h.unshift({course:course.name||"Course",date:new Date().toLocaleDateString("en-GB"),players:gs.map(g=>({name:g.name,points:total(g)[0]}))});localStorage.setItem("sfh",JSON.stringify(h.slice(0,30)));showSaved();alert("Round saved")};
+function showSaved(){let h=JSON.parse(localStorage.getItem("sfh")||"[]");$("saved").innerHTML=h.length?"<b>Saved rounds</b>"+h.map(x=>`<div class="muted" style="padding:7px 0;border-bottom:1px solid #ddd"><b>${x.course}</b> · ${x.date}<br>${x.players.map(p=>p.name+" "+p.points+" pts").join(" • ")}</div>`).join(""):"<span class='muted'>No saved rounds</span>"}
+function renderSetup(){let t=course.tees;$("cname").value=course.name;$("cpar").value=course.par;$("crating").value=course.rating;$("slope").value=course.slope;$("allow").value=course.allow;$("tees").innerHTML=t.map((x,i)=>`<div class="tee"><input value="${x.name}" data-tn="${i}"><input type="number" value="${x.yards}" placeholder="yards" data-ty="${i}"><button class="grey" data-tr="${i}">×</button></div>`).join("");$("holeEdit").innerHTML=`<b>Hole</b><b>Par</b><b>SI</b><b>Yards</b>`+course.holes.map((x,i)=>`<div>${i+1}</div><input type="number" min="3" max="6" value="${x[0]}" data-hp="${i}"><input type="number" min="1" max="18" value="${x[1]}" data-si="${i}"><input type="number" value="${x[2]}" placeholder="-" data-hy="${i}">`).join("");
+document.querySelectorAll("[data-tn]").forEach(x=>x.oninput=()=>t[x.dataset.tn].name=x.value);document.querySelectorAll("[data-ty]").forEach(x=>x.oninput=()=>t[x.dataset.ty].yards=x.value);document.querySelectorAll("[data-tr]").forEach(x=>x.onclick=()=>{if(t.length>1){t.splice(+x.dataset.tr,1);renderSetup()}});
+document.querySelectorAll("[data-hp]").forEach(x=>x.oninput=()=>course.holes[x.dataset.hp][0]=+x.value);document.querySelectorAll("[data-si]").forEach(x=>x.oninput=()=>course.holes[x.dataset.si][1]=+x.value);document.querySelectorAll("[data-hy]").forEach(x=>x.oninput=()=>course.holes[x.dataset.hy][2]=x.value)}
+$("setup").onclick=()=>{$("modal").classList.add("show");renderSetup()};$("close").onclick=()=>$("modal").classList.remove("show");$("addTee").onclick=()=>{if(course.tees.length<5){course.tees.push({name:"New tee",yards:""});renderSetup()}};
+$("apply").onclick=()=>{course.name=$("cname").value.trim();course.par=+$("cpar").value||72;course.rating=$("crating").value;slope=+$("slope").value||113;course.slope=slope;course.allow=+$("allow").value||1;$("modal").classList.remove("show");renderAll()};
+$("searchCourse").onclick=searchCourses;$("courseSearch").onkeydown=e=>{if(e.key==="Enter")searchCourses()};
+$("verifiedCourse").onchange=()=>{if($("verifiedCourse").value==="hurtmore")setVerifiedTee("Yellow")};
+renderAll();renderQuickTees();showSaved();
+})();
+</script></body></html>
